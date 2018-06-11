@@ -31,8 +31,8 @@ long delF_Time = 0;
 long delF_Period = 1000;
 
 
-int lvl_h = 500;
-int lvl_l = 500;
+int lvl_h = 800;
+int lvl_l = 800;
 float phMax = 7.0;
 float phMin = 6.5;
 int ph_plus_doze = 30000;
@@ -48,7 +48,7 @@ int debug_period = 1000;
 long current_delF;
 //int delF_period = 
 
-
+int tank_state_val;
 //tank state vars
 int full = 3;
 int not_full = 2;
@@ -58,10 +58,22 @@ int error = 0;
 int check_tank_state(){
   int lvl_h_value = analogRead(water_lvl_sensor_h);
   int lvl_l_value = analogRead(water_lvl_sensor_l);
-  if(lvl_h_value>lvl_h && lvl_l_value>lvl_l) return 3;
-  if(lvl_h_value<=lvl_h && lvl_l_value>lvl_l) return 2;
-  if(lvl_h_value<=lvl_h && lvl_l_value<=lvl_l) return 1;
-  if(lvl_h_value>lvl_h && lvl_l_value<=lvl_l) return 0;
+  if(lvl_h_value<lvl_h && lvl_l_value<lvl_l) {
+    tank_state_val = 3;
+    return 3;
+  }
+  if(lvl_h_value>=lvl_h && lvl_l_value<lvl_l){
+    tank_state_val = 2;
+    return 2;
+  }
+  if(lvl_h_value>=lvl_h && lvl_l_value>=lvl_l){
+    tank_state_val = 1;
+    return 1;
+  }
+  if(lvl_h_value<lvl_h && lvl_l_value>=lvl_l) {
+    tank_state_val = 0;
+    return 0;
+  }
 }
 
 float check_ph(){
@@ -106,15 +118,29 @@ void pump_clear_wtr(int state){
 }
 
 void fill_tank(){
+//  Serial.println("1");
+if (check_tank_state()!=full){
   pump_clear_wtr(0);
+//  Serial.println("2");
   while(check_tank_state() != full){
-    Serial.print("tank state - ");
-    Serial.print(check_tank_state());
+//    Serial.println("3"); 
+//    Serial.print("tank state - ");
+//    Serial.println(check_tank_state());
+    check_Sensors();
+    Debug();
     if(check_tank_state() == error){
+//      Serial.println("4");
       break;
     }
   }
+//  Serial.println("5");
   pump_clear_wtr(1);
+//  Serial.println("6");
+}
+else{
+  Serial.println("tank is full");
+  delay(500);
+}
 }
 
 
@@ -223,6 +249,8 @@ void Debug(){
   Serial.println(water_lvl_sensor_l_val);
   Serial.print("water_lvl_sensor_h_val - ");
   Serial.println(water_lvl_sensor_h_val);
+  Serial.print("tank state - ");
+  Serial.println(tank_state_val);
   Serial.println();
   Serial.print(" Time - ");
     Serial.println(delF_Time);
@@ -240,6 +268,7 @@ void check_water_lvl_sensor(){
   water_lvl_sensor_h_val = analogRead(water_lvl_sensor_h);
 }
 void check_Sensors(){
+  check_tank_state();
   check_substrat_hum();
   check_water_lvl_sensor();
   check_ph();
@@ -311,12 +340,13 @@ void setup() {
 
 
 void loop() {
+  fill_tank();
 //Test();
 //check_ph();
 //check_water_lvl_sensor();
 //Debug();
 //Control();
-correct_ph();
+//correct_ph();
 
   
 
